@@ -14,7 +14,7 @@ case "$PILIHOS" in
 	1|"") PILIHOS="https://file.nixpoin.com/windows2019DO.gz";;
 	2) PILIHOS="https://file.nixpoin.com/windows2016.gz";;
 	3) PILIHOS="https://download1589.mediafire.com/om29odxbrj5g38gUMD7RWK7ZL1IsI9J8Z5o2Ql9VbYIwq_zdf6YFgHJC6NCcQeWRIgW0YtHu3NhXPbBzbcYeOtKMHW2MmujTqFdnoV95L0rwtw0BKdv-PWJhhor4Wxu8K7CiQIKJEwobcL8REtIskfXJW6PjUjJYSQi1XCyxiGsQWw/2fclsa87a89ro29/ws12%2853058%29.gz";;
-	4) PILIHOS="https://file.nixpoin.com/win10.gz";;
+	4) PILIHOS="http://143.198.203.169/Windows10.gz";;
 	5) read -p "[?] Masukkan Link GZ mu : " PILIHOS;;
 	*) echo "[!] Pilihan salah"; exit;;
 esac
