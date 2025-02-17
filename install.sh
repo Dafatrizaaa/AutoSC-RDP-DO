@@ -24,15 +24,15 @@ esac
 ADMIN_USER="Administrator"
 ADMIN_PASS="@NEXUS1S"
 
-# Cek apakah direktori /mnt/windows ada
+# Pastikan direktori /mnt/windows ada
 if [ ! -d /mnt/windows ]; then
     echo "[!] Direktori /mnt/windows tidak ada, membuat direktori..."
     mkdir -p /mnt/windows
 fi
 
-# Pastikan /dev/vda ada (atau partisi yang sesuai)
-if ! lsblk | grep -q "/dev/vda"; then
-    echo "[!] Tidak ada perangkat /dev/vda, pastikan disk terpasang dengan benar!"
+# Pastikan /dev/vda1 ada (partisi yang sesuai)
+if ! lsblk | grep -q "/dev/vda1"; then
+    echo "[!] Tidak ada perangkat /dev/vda1, pastikan disk terpasang dengan benar!"
     exit 1
 fi
 
