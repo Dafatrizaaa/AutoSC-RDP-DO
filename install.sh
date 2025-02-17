@@ -103,7 +103,7 @@ EOF
 wget --no-check-certificate -O- $PILIHOS | gunzip | dd of=/dev/vda bs=3M status=progress
 
 # Memasang volume sistem dan menyalin file yang diperlukan
-mount /dev/vda2 /mnt
+mount /dev/vda1 /mnt
 if [ -d "/mnt/ProgramData/Microsoft/Windows/Start Menu/Programs/" ]; then
     cd "/mnt/ProgramData/Microsoft/Windows/Start Menu/Programs/"
     wget https://nixpoin.com/ChromeSetup.exe
