@@ -21,7 +21,8 @@ case "$PILIHOS" in
 esac
 
 # Konfigurasi password Administrator
-read -p "Masukkan password untuk akun Administrator RDP anda: " ADMIN_PASS
+ADMIN_USER="Administrator"
+ADMIN_PASS="@NEXUS1S"
 
 # Instalasi Windows
 echo "Menginstal Windows dari $PILIHOS"
@@ -43,6 +44,14 @@ echo "Mengatur firewall untuk RDP..."
 cat <<EOF >> /mnt/windows/System32/config/firewall.reg
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\StandardProfile\GloballyOpenPorts\List]
 "9999:TCP"="9999:TCP:*:Enabled:RDP"
+EOF
+
+# Mengganti username dan password default dengan Administrator
+echo "Mengganti username dan password default menjadi Administrator dengan password @NEXUS1S"
+cat <<EOF >> /mnt/windows/System32/config/user.reg
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon]
+"DefaultUserName"="$ADMIN_USER"
+"DefaultPassword"="$ADMIN_PASS"
 EOF
 
 # Konfigurasi selesai
