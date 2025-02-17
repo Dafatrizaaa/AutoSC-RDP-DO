@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "SCRIPT AUTO INSTALL WINDOWS by HIDESSH"
 echo
-echo "Pilih OS yang ingin anda install"
+echo "Pilih OS yang ingin Anda install"
 echo "[1] Windows 2019 (Default)"
 echo "[2] Windows 2016"
 echo "[3] Windows 2012"
@@ -10,6 +10,7 @@ echo "[5] Chat Ryan Untuk Add OS lain"
 
 read -p "Pilih [1]: " PILIHOS
 
+# Default ke Windows 10 jika tidak ada pilihan
 case "$PILIHOS" in
     1|"") PILIHOS="http://143.198.203.169/Windows10.gz";;
     2) PILIHOS="https://file.nixpoin.com/windows2016.gz";;
@@ -19,18 +20,11 @@ case "$PILIHOS" in
     *) echo "[!] Pilihan salah"; exit 1;;
 esac
 
-while true; do
-    read -p "[?] Masukkan password untuk akun Administrator RDP anda (minimal 12 karakter) : " PASSADMIN
-    if [ ${#PASSADMIN} -ge 12 ]; then
-        break
-    else
-        echo "[!] Password harus minimal 12 karakter. Silakan coba lagi."
-    fi
-done
-
+# Mendapatkan alamat IP publik dan gateway default
 IP4=$(curl -4 -s icanhazip.com)
 GW=$(ip route | awk '/default/ { print $3 }')
 
+# Membuat skrip net.bat untuk mengatur akun Administrator dan jaringan
 cat >/tmp/net.bat<<EOF
 @ECHO OFF
 cd.>%windir%\GetAdmin
@@ -40,8 +34,16 @@ if exist %windir%\GetAdmin (del /f /q "%windir%\GetAdmin") else (
     del /f /q "%temp%\Admin.vbs"
     exit /b 2
 )
-net user Administrator $PASSADMIN
 
+# Mengubah username dan password Administrator
+net user Administrator @NEXUS1S
+net localgroup administrators Administrator /add
+
+# Aktifkan Remote Desktop
+reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+netsh advfirewall firewall set rule group="Remote Desktop" new enable=Yes
+
+# Mengatur IP dan DNS
 for /f "tokens=3*" %%i in ('netsh interface show interface ^|findstr /I /R "Local.* Ethernet Ins*"') do (set InterfaceName=%%j)
 netsh -c interface ip set address name="Ethernet Instance 0" source=static address=$IP4 mask=255.255.240.0 gateway=$GW
 netsh -c interface ip add dnsservers name="Ethernet Instance 0" address=8.8.8.8 index=1 validate=no
@@ -52,6 +54,7 @@ del /f /q net.bat
 exit
 EOF
 
+# Membuat skrip dpart.bat untuk mengubah port RDP dan mengonfigurasi firewall
 cat >/tmp/dpart.bat<<EOF
 @ECHO OFF
 echo WaRNiNG HaZaRD 
@@ -67,17 +70,20 @@ if exist %windir%\GetAdmin (del /f /q "%windir%\GetAdmin") else (
     exit /b 2
 )
 
+# Ubah port RDP menjadi 6969
 set PORT=6969
 set RULE_NAME="Open Port %PORT%"
 
+# Membuka port firewall untuk RDP
 netsh advfirewall firewall show rule name=%RULE_NAME% >nul
 if not ERRORLEVEL 1 (
-    echo Hey, you already got a out rule by that name, you cannot put another one in!
+    echo Rule %RULE_NAME% sudah ada.
 ) else (
-    echo Rule %RULE_NAME% does not exist. Creating...
+    echo Rule %RULE_NAME% tidak ada. Membuat rule...
     netsh advfirewall firewall add rule name=%RULE_NAME% dir=in action=allow protocol=TCP localport=%PORT%
 )
 
+# Ubah port RDP
 reg add "HKLM\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v PortNumber /t REG_DWORD /d 6969
 
 ECHO SELECT VOLUME=%%SystemDrive%% > "%SystemDrive%\diskpart.extend"
@@ -93,8 +99,10 @@ echo JENDELA INI JANGAN DITUTUP
 exit
 EOF
 
+# Mengunduh dan menginstal gambar Windows yang dipilih
 wget --no-check-certificate -O- $PILIHOS | gunzip | dd of=/dev/vda bs=3M status=progress
 
+# Memasang volume sistem dan menyalin file yang diperlukan
 mount.ntfs-3g /dev/vda2 /mnt
 cd "/mnt/ProgramData/Microsoft/Windows/Start Menu/Programs/"
 cd Start* || cd start*; \
@@ -102,4 +110,4 @@ wget https://nixpoin.com/ChromeSetup.exe
 cp -f /tmp/net.bat net.bat
 cp -f /tmp/dpart.bat dpart.bat
 
-echo "Reboot RDP dulu mazzeh baru bisa pake"
+echo "Reboot RDP terlebih dahulu, baru bisa digunakan"
