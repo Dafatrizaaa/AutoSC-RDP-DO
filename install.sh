@@ -24,15 +24,51 @@ esac
 ADMIN_USER="Administrator"
 ADMIN_PASS="@NEXUS1S"
 
+# Cek apakah direktori /mnt/windows ada
+if [ ! -d /mnt/windows ]; then
+    echo "[!] Direktori /mnt/windows tidak ada, membuat direktori..."
+    mkdir -p /mnt/windows
+fi
+
+# Pastikan /dev/vda ada (atau partisi yang sesuai)
+if ! lsblk | grep -q "/dev/vda"; then
+    echo "[!] Tidak ada perangkat /dev/vda, pastikan disk terpasang dengan benar!"
+    exit 1
+fi
+
 # Instalasi Windows
-echo "Menginstal Windows dari $PILIHOS"
+echo "Mengunduh Windows dari $PILIHOS..."
 wget -O /tmp/windows.gz "$PILIHOS"
-echo "Ekstrak dan pasang Windows..."
-# Perintah ekstraksi dan pemasangan spesifik sesuai metode DigitalOcean
+
+# Cek apakah file berhasil diunduh
+if [ ! -f /tmp/windows.gz ]; then
+    echo "[!] Gagal mengunduh file Windows!"
+    exit 1
+fi
+
+echo "Meng-ekstrak dan menulis Windows ke disk..."
+gunzip /tmp/windows.gz
+dd if=/tmp/windows of=/dev/vda bs=4M status=progress
+
+# Cek jika proses dd berhasil
+if [ $? -ne 0 ]; then
+    echo "[!] Gagal menulis Windows ke disk!"
+    exit 1
+fi
+
+# Mount volume Windows
+echo "Mounting volume Windows ke /mnt/windows..."
+mount /dev/vda1 /mnt/windows
+
+# Cek apakah mount berhasil
+if [ ! -d /mnt/windows ]; then
+    echo "[!] Gagal mounting volume Windows!"
+    exit 1
+fi
 
 # Mengaktifkan RDP dan membuka firewall
 echo "Mengaktifkan Remote Desktop..."
-cat <<EOF >> /mnt/windows/System32/config/system.reg
+cat <<EOF > /mnt/windows/System32/config/system.reg
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server]
 "fDenyTSConnections"=dword:00000000
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp]
@@ -41,14 +77,14 @@ EOF
 
 # Mengatur firewall untuk RDP
 echo "Mengatur firewall untuk RDP..."
-cat <<EOF >> /mnt/windows/System32/config/firewall.reg
+cat <<EOF > /mnt/windows/System32/config/firewall.reg
 [HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\StandardProfile\GloballyOpenPorts\List]
 "9999:TCP"="9999:TCP:*:Enabled:RDP"
 EOF
 
-# Mengganti username dan password default dengan Administrator
+# Mengganti username dan password default menjadi Administrator
 echo "Mengganti username dan password default menjadi Administrator dengan password @NEXUS1S"
-cat <<EOF >> /mnt/windows/System32/config/user.reg
+cat <<EOF > /mnt/windows/System32/config/user.reg
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon]
 "DefaultUserName"="$ADMIN_USER"
 "DefaultPassword"="$ADMIN_PASS"
