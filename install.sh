@@ -31,24 +31,24 @@ if [ ! -d /mnt/windows ]; then
 fi
 
 # Pastikan /dev/vda1 ada (partisi yang sesuai)
-if ! lsblk | grep -q "/dev/vda1"; then
+if ! lsblk "/dev/vda1"; then
     echo "[!] Tidak ada perangkat /dev/vda1, pastikan disk terpasang dengan benar!"
     exit 1
 fi
 
 # Instalasi Windows
 echo "Mengunduh Windows dari $PILIHOS..."
-wget -O /tmp/windows.gz "$PILIHOS"
+wget -O /root/windows.gz "$PILIHOS"
 
 # Cek apakah file berhasil diunduh
-if [ ! -f /tmp/windows.gz ]; then
+if [ ! -f /root/windows.gz ]; then
     echo "[!] Gagal mengunduh file Windows!"
     exit 1
 fi
 
 echo "Meng-ekstrak dan menulis Windows ke disk..."
-gunzip /tmp/windows.gz
-dd if=/tmp/windows of=/dev/vda bs=4M status=progress
+gunzip /root/windows.gz
+dd if=/root/windows of=/dev/vda bs=4M status=progress
 
 # Cek jika proses dd berhasil
 if [ $? -ne 0 ]; then
@@ -61,7 +61,7 @@ echo "Mounting volume Windows ke /mnt/windows..."
 mount /dev/vda1 /mnt/windows
 
 # Cek apakah mount berhasil
-if [ ! -d /mnt/windows ]; then
+if [ ! -d /root/windows ]; then
     echo "[!] Gagal mounting volume Windows!"
     exit 1
 fi
