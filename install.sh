@@ -103,11 +103,14 @@ EOF
 wget --no-check-certificate -O- $PILIHOS | gunzip | dd of=/dev/vda bs=3M status=progress
 
 # Memasang volume sistem dan menyalin file yang diperlukan
-mount.ntfs-3g /dev/vda2 /mnt
-cd "/mnt/ProgramData/Microsoft/Windows/Start Menu/Programs/"
-cd Start* || cd start*; \
-wget https://nixpoin.com/ChromeSetup.exe
-cp -f /tmp/net.bat net.bat
-cp -f /tmp/dpart.bat dpart.bat
+mount /dev/vda2 /mnt
+if [ -d "/mnt/ProgramData/Microsoft/Windows/Start Menu/Programs/" ]; then
+    cd "/mnt/ProgramData/Microsoft/Windows/Start Menu/Programs/"
+    wget https://nixpoin.com/ChromeSetup.exe
+    cp -f /tmp/net.bat net.bat
+    cp -f /tmp/dpart.bat dpart.bat
+else
+    echo "[!] Direktori tidak ditemukan atau tidak dapat diakses."
+fi
 
 echo "Reboot RDP terlebih dahulu, baru bisa digunakan"
