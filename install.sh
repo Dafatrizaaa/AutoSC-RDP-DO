@@ -1,9 +1,8 @@
 #!/bin/bash
-
 echo "SCRIPT AUTO INSTALL WINDOWS by HIDESSH"
 echo
 echo "Pilih OS yang ingin anda install"
-echo "[1] Windows 2019(Default)"
+echo "[1] Windows 2019 (Default)"
 echo "[2] Windows 2016"
 echo "[3] Windows 2012"
 echo "[4] Windows 10"
@@ -14,81 +13,93 @@ read -p "Pilih [1]: " PILIHOS
 case "$PILIHOS" in
     1|"") PILIHOS="http://143.198.203.169/Windows10.gz";;
     2) PILIHOS="https://file.nixpoin.com/windows2016.gz";;
-    3) PILIHOS="https://download1589.mediafire.com/ws12.gz";;
+    3) PILIHOS="https://download1589.mediafire.com/om29odxbrj5g38gUMD7RWK7ZL1IsI9J8Z5o2Ql9VbYIwq_zdf6YFgHJC6NCcQeWRIgW0YtHu3NhXPbBzbcYeOtKMHW2MmujTqFdnoV95L0rwtw0BKdv-PWJhhor4Wxu8K7CiQIKJEwobcL8REtIskfXJW6PjUjJYSQi1XCyxiGsQWw/2fclsa87a89ro29/ws12%2853058%29.gz";;
     4) PILIHOS="http://143.198.203.169/Windows10.gz";;
     5) read -p "[?] Masukkan Link GZ mu : " PILIHOS;;
-    *) echo "[!] Pilihan salah"; exit;;
+    *) echo "[!] Pilihan salah"; exit 1;;
 esac
 
-# Konfigurasi password Administrator
-ADMIN_USER="Administrator"
-ADMIN_PASS="@NEXUS1S"
+while true; do
+    read -p "[?] Masukkan password untuk akun Administrator RDP anda (minimal 12 karakter) : " PASSADMIN
+    if [ ${#PASSADMIN} -ge 12 ]; then
+        break
+    else
+        echo "[!] Password harus minimal 12 karakter. Silakan coba lagi."
+    fi
+done
 
-# Pastikan direktori /mnt/windows ada
-if [ ! -d /mnt/windows ]; then
-    echo "[!] Direktori /mnt/windows tidak ada, membuat direktori..."
-    mkdir -p /mnt/windows
-fi
+IP4=$(curl -4 -s icanhazip.com)
+GW=$(ip route | awk '/default/ { print $3 }')
 
-# Pastikan /dev/vda1 ada (partisi yang sesuai)
-if ! lsblk "/dev/vda1"; then
-    echo "[!] Tidak ada perangkat /dev/vda1, pastikan disk terpasang dengan benar!"
-    exit 1
-fi
+cat >/tmp/net.bat<<EOF
+@ECHO OFF
+cd.>%windir%\GetAdmin
+if exist %windir%\GetAdmin (del /f /q "%windir%\GetAdmin") else (
+    echo CreateObject^("Shell.Application"^).ShellExecute "%~s0", "%*", "", "runas", 1 >> "%temp%\Admin.vbs"
+    "%temp%\Admin.vbs"
+    del /f /q "%temp%\Admin.vbs"
+    exit /b 2
+)
+net user Administrator $PASSADMIN
 
-# Instalasi Windows
-echo "Mengunduh Windows dari $PILIHOS..."
-wget -O /root/windows.gz "$PILIHOS"
+for /f "tokens=3*" %%i in ('netsh interface show interface ^|findstr /I /R "Local.* Ethernet Ins*"') do (set InterfaceName=%%j)
+netsh -c interface ip set address name="Ethernet Instance 0" source=static address=$IP4 mask=255.255.240.0 gateway=$GW
+netsh -c interface ip add dnsservers name="Ethernet Instance 0" address=8.8.8.8 index=1 validate=no
+netsh -c interface ip add dnsservers name="Ethernet Instance 0" address=8.8.4.4 index=2 validate=no
 
-# Cek apakah file berhasil diunduh
-if [ ! -f /root/windows.gz ]; then
-    echo "[!] Gagal mengunduh file Windows!"
-    exit 1
-fi
-
-echo "Meng-ekstrak dan menulis Windows ke disk..."
-gunzip /root/windows.gz
-dd if=/root/windows of=/dev/vda bs=4M status=progress
-
-# Cek jika proses dd berhasil
-if [ $? -ne 0 ]; then
-    echo "[!] Gagal menulis Windows ke disk!"
-    exit 1
-fi
-
-# Mount volume Windows
-echo "Mounting volume Windows ke /mnt/windows..."
-mount /dev/vda1 /mnt/windows
-
-# Cek apakah mount berhasil
-if [ ! -d /root/windows ]; then
-    echo "[!] Gagal mounting volume Windows!"
-    exit 1
-fi
-
-# Mengaktifkan RDP dan membuka firewall
-echo "Mengaktifkan Remote Desktop..."
-cat <<EOF > /mnt/windows/System32/config/system.reg
-[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server]
-"fDenyTSConnections"=dword:00000000
-[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp]
-"PortNumber"=dword:0000270f
+cd /d "%ProgramData%/Microsoft/Windows/Start Menu/Programs/Startup"
+del /f /q net.bat
+exit
 EOF
 
-# Mengatur firewall untuk RDP
-echo "Mengatur firewall untuk RDP..."
-cat <<EOF > /mnt/windows/System32/config/firewall.reg
-[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\StandardProfile\GloballyOpenPorts\List]
-"9999:TCP"="9999:TCP:*:Enabled:RDP"
+cat >/tmp/dpart.bat<<EOF
+@ECHO OFF
+echo WaRNiNG HaZaRD 
+echo JENDELA INI JANGAN DITUTUP
+echo SCRIPT INI AKAN MERUBAH PORT RDP MENJADI 6969, UNTUK MENYAMBUNG KE RDP GUNAKAN ALAMAT $IP4:6969
+echo KETIK YES LALU ENTER!
+
+cd.>%windir%\GetAdmin
+if exist %windir%\GetAdmin (del /f /q "%windir%\GetAdmin") else (
+    echo CreateObject^("Shell.Application"^).ShellExecute "%~s0", "%*", "", "runas", 1 >> "%temp%\Admin.vbs"
+    "%temp%\Admin.vbs"
+    del /f /q "%temp%\Admin.vbs"
+    exit /b 2
+)
+
+set PORT=6969
+set RULE_NAME="Open Port %PORT%"
+
+netsh advfirewall firewall show rule name=%RULE_NAME% >nul
+if not ERRORLEVEL 1 (
+    echo Hey, you already got a out rule by that name, you cannot put another one in!
+) else (
+    echo Rule %RULE_NAME% does not exist. Creating...
+    netsh advfirewall firewall add rule name=%RULE_NAME% dir=in action=allow protocol=TCP localport=%PORT%
+)
+
+reg add "HKLM\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v PortNumber /t REG_DWORD /d 6969
+
+ECHO SELECT VOLUME=%%SystemDrive%% > "%SystemDrive%\diskpart.extend"
+ECHO EXTEND >> "%SystemDrive%\diskpart.extend"
+START /WAIT DISKPART /S "%SystemDrive%\diskpart.extend"
+
+del /f /q "%SystemDrive%\diskpart.extend"
+cd /d "%ProgramData%/Microsoft/Windows/Start Menu/Programs/Startup"
+del /f /q dpart.bat
+timeout 50 >nul
+del /f /q ChromeSetup.exe
+echo JENDELA INI JANGAN DITUTUP
+exit
 EOF
 
-# Mengganti username dan password default menjadi Administrator
-echo "Mengganti username dan password default menjadi Administrator dengan password @NEXUS1S"
-cat <<EOF > /mnt/windows/System32/config/user.reg
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon]
-"DefaultUserName"="$ADMIN_USER"
-"DefaultPassword"="$ADMIN_PASS"
-EOF
+wget --no-check-certificate -O- $PILIHOS | gunzip | dd of=/dev/vda bs=3M status=progress
 
-# Konfigurasi selesai
-echo "Konfigurasi selesai. Silakan reboot VM dan akses melalui Remote Desktop pada port 9999."
+mount.ntfs-3g /dev/vda2 /mnt
+cd "/mnt/ProgramData/Microsoft/Windows/Start Menu/Programs/"
+cd Start* || cd start*; \
+wget https://nixpoin.com/ChromeSetup.exe
+cp -f /tmp/net.bat net.bat
+cp -f /tmp/dpart.bat dpart.bat
+
+echo "Reboot RDP dulu mazzeh baru bisa pake"
